@@ -647,6 +647,7 @@ async function lfSaveLead(name, email) {
                 lead_name:  name,
                 email,
                 status:     'new',
+                client_id:  'direct',
                 created_at: new Date().toISOString()
             })
         });
