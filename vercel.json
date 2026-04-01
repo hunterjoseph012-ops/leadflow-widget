@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/leadflow-widget.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
