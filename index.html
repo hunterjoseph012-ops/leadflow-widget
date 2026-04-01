@@ -597,6 +597,7 @@ CONTEXT: You already opened the conversation with: "Hi! I'm the LeadFlow AI 👋
 
 // ─── LEAD CAPTURE ────────────────────────────────────────────────────────────
 function lfExtractLeadInfo() {
+    console.log('Searching history for lead info:', JSON.stringify(lfHistory));
     const emailRe = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
     let email = null;
     let name  = null;
@@ -633,6 +634,7 @@ function lfExtractLeadInfo() {
 
 async function lfSaveLead(name, email) {
     try {
+        console.log('Saving lead:', name, email);
         const res = await fetch(LF.supabaseUrl + '/rest/v1/leads', {
             method:  'POST',
             headers: {
@@ -648,14 +650,14 @@ async function lfSaveLead(name, email) {
                 created_at: new Date().toISOString()
             })
         });
-        if (res.ok) {
-            console.log('[LeadFlow] Lead saved:', name, email);
-        } else {
-            const err = await res.text();
-            console.warn('[LeadFlow] Lead save failed:', res.status, err);
+        console.log('Supabase response status:', res.status);
+        const responseText = await res.text();
+        console.log('Supabase response:', responseText);
+        if (!res.ok) {
+            console.warn('[LeadFlow] Lead save failed:', res.status, responseText);
         }
-    } catch (err) {
-        console.error('[LeadFlow] Lead save error:', err);
+    } catch (error) {
+        console.error('lfSaveLead error:', error);
     }
 }
 
@@ -730,6 +732,7 @@ async function lfSend() {
         lfAddBotMessage(cleanReply);
 
         if (showCalendly) {
+            console.log('SHOW_CALENDLY detected, extracting lead info');
             setTimeout(lfShowCalendly, 350);
             lfEndConversation();
             const lead = lfExtractLeadInfo();
