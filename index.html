@@ -542,10 +542,12 @@
 
 // ─── CONFIG ─────────────────────────────────────────────────────────────────
 const LF = {
-    model:       'claude-haiku-4-5-20251001',
-    apiUrl:      '/api/chat',
-    calendlyUrl: 'https://calendly.com/leadflowuk/30min',
-    maxTokens:   350
+    model:        'claude-haiku-4-5-20251001',
+    apiUrl:       '/api/chat',
+    calendlyUrl:  'https://calendly.com/leadflowuk/30min',
+    maxTokens:    350,
+    supabaseUrl:  'https://upxwmttgfyoppmtkwggn.supabase.co',
+    supabaseKey:  'sb_publishable_JVUfEH-nqbZY9uNp95jjYw_8Yi3fDSc'
 };
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
@@ -592,6 +594,71 @@ SPECIAL INSTRUCTIONS:
 - When NOT QUALIFIED: be kind and empathetic, briefly explain why it's not quite the right fit right now, wish them well — no hard sell. Include the exact marker ##NOT_QUALIFIED## at the very end (hidden from user).
 
 CONTEXT: You already opened the conversation with: "Hi! I'm the LeadFlow AI 👋 I help businesses like yours fill their calendar with qualified appointments. What type of business do you run?" — continue from the user's first reply.`;
+
+// ─── LEAD CAPTURE ────────────────────────────────────────────────────────────
+function lfExtractLeadInfo() {
+    const emailRe = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+    let email = null;
+    let name  = null;
+
+    // Scan user messages newest-first
+    const userMsgs = lfHistory.filter(m => m.role === 'user').reverse();
+
+    for (const msg of userMsgs) {
+        if (!email && emailRe.test(msg.content)) {
+            email = msg.content.match(emailRe)[0];
+        }
+    }
+
+    // Look for a name in assistant messages e.g. "Hi Sarah" / "Thanks John"
+    const nameRe = /(?:hi|hey|thanks|thank you|great|perfect|lovely),?\s+([A-Z][a-z]+)/;
+    const assistantMsgs = lfHistory.filter(m => m.role === 'assistant').reverse();
+    for (const msg of assistantMsgs) {
+        const match = msg.content.match(nameRe);
+        if (match) { name = match[1]; break; }
+    }
+
+    // Fallback: first user message that looks like just a name
+    if (!name) {
+        for (const msg of [...userMsgs].reverse()) {
+            const trimmed = msg.content.trim();
+            if (/^[A-Z][a-z]+(\s[A-Z][a-z]+)?$/.test(trimmed)) {
+                name = trimmed; break;
+            }
+        }
+    }
+
+    return { name: name || 'Unknown', email: email || '' };
+}
+
+async function lfSaveLead(name, email) {
+    try {
+        const res = await fetch(LF.supabaseUrl + '/rest/v1/leads', {
+            method:  'POST',
+            headers: {
+                'apikey':        LF.supabaseKey,
+                'Authorization': 'Bearer ' + LF.supabaseKey,
+                'Content-Type':  'application/json',
+                'Prefer':        'return=minimal'
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                status:     'new',
+                source:     'widget',
+                created_at: new Date().toISOString()
+            })
+        });
+        if (res.ok) {
+            console.log('[LeadFlow] Lead saved:', name, email);
+        } else {
+            const err = await res.text();
+            console.warn('[LeadFlow] Lead save failed:', res.status, err);
+        }
+    } catch (err) {
+        console.error('[LeadFlow] Lead save error:', err);
+    }
+}
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -666,6 +733,8 @@ async function lfSend() {
         if (showCalendly) {
             setTimeout(lfShowCalendly, 350);
             lfEndConversation();
+            const lead = lfExtractLeadInfo();
+            lfSaveLead(lead.name, lead.email);
         } else if (notQualified) {
             setTimeout(lfShowRestartPrompt, 600);
             lfEndConversation();
