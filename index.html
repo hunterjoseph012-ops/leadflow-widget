@@ -542,9 +542,8 @@
 
 // ─── CONFIG ─────────────────────────────────────────────────────────────────
 const LF = {
-    get apiKey() { return localStorage.getItem('lf_api_key') || ''; },
     model:       'claude-haiku-4-5-20251001',
-    apiUrl:      'https://api.anthropic.com/v1/messages',
+    apiUrl:      '/api/chat',
     calendlyUrl: 'https://calendly.com/leadflowuk/30min',
     maxTokens:   350
 };
@@ -594,30 +593,8 @@ SPECIAL INSTRUCTIONS:
 
 CONTEXT: You already opened the conversation with: "Hi! I'm the LeadFlow AI 👋 I help businesses like yours fill their calendar with qualified appointments. What type of business do you run?" — continue from the user's first reply.`;
 
-// ─── API KEY SETUP ───────────────────────────────────────────────────────────
-function lfPromptForApiKey() {
-    const key = prompt(
-        'Enter your Anthropic API key to use LeadFlow AI.\n' +
-        'It will be saved in your browser and never sent anywhere except Anthropic.\n\n' +
-        'Your key:'
-    );
-    if (key && key.trim().startsWith('sk-')) {
-        localStorage.setItem('lf_api_key', key.trim());
-        return true;
-    }
-    if (key !== null) {
-        alert('That doesn\'t look like a valid Anthropic API key (should start with "sk-"). Please try again.');
-        return lfPromptForApiKey();
-    }
-    return false;
-}
-
 // ─── INIT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    if (!LF.apiKey) {
-        const provided = lfPromptForApiKey();
-        if (!provided) return; // user cancelled
-    }
     lfInitialized = true;
     setTimeout(() => {
         lfAddBotMessage(
@@ -652,10 +629,7 @@ async function lfSend() {
         const res = await fetch(LF.apiUrl, {
             method:  'POST',
             headers: {
-                'Content-Type':                              'application/json',
-                'x-api-key':                                 LF.apiKey,
-                'anthropic-version':                         '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 model:      LF.model,
@@ -705,8 +679,6 @@ async function lfSend() {
         if (err.name === 'TypeError' || err.message === 'Failed to fetch' || err.message === 'Load failed') {
             // Network error or CORS failure
             userMsg = "Couldn't reach the AI — please check your internet connection and try again.";
-        } else if (err.status === 401) {
-            userMsg = "Authentication failed — the API key is invalid or expired.";
         } else if (err.status === 429) {
             userMsg = "We're getting a lot of requests right now — give it a second and try again! 😅";
         } else if (err.status === 400) {
