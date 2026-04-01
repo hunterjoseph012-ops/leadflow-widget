@@ -642,10 +642,9 @@ async function lfSaveLead(name, email) {
                 'Prefer':        'return=minimal'
             },
             body: JSON.stringify({
-                name,
+                lead_name:  name,
                 email,
                 status:     'new',
-                source:     'widget',
                 created_at: new Date().toISOString()
             })
         });
