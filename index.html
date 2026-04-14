@@ -631,7 +631,7 @@ function lfExtractLeadInfo() {
         }
     }
 
-    return { name: name || 'Unknown', email: email || '', phone: '' };
+    return { name: name || 'Unknown', email: email || '', phone: phone || '' };
 }
 
 async function lfSaveLead(name, email, phone) {
