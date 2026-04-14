@@ -600,7 +600,7 @@ function lfExtractLeadInfo() {
     console.log('Searching history for lead info:', JSON.stringify(lfHistory));
     const emailRe = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
     let email = null;
-    let name  = null;
+    let name  = null; let phone = null; let phone = null;
 
     // Scan user messages newest-first
     const userMsgs = lfHistory.filter(m => m.role === 'user').reverse();
