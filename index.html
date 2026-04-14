@@ -608,6 +608,8 @@ function lfExtractLeadInfo() {
     for (const msg of userMsgs) {
         if (!email && emailRe.test(msg.content)) {
             email = msg.content.match(emailRe)[0];
+                // Extract name from same message
+                if (!name) { const beforeEmail = msg.content.replace(emailRe, '').trim(); if (beforeEmail.length > 0) name = beforeEmail; }
         }
     }
 
@@ -882,3 +884,4 @@ function lfSanitize(str) {
 
 </body>
 </html>
+
