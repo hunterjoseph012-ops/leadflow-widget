@@ -634,7 +634,7 @@ function lfExtractLeadInfo() {
     return { name: name || 'Unknown', email: email || '' };
 }
 
-async function lfSaveLead(name, email) {
+async function lfSaveLead(name, email, phone) {
     try {
         console.log('Saving lead:', name, email);
         const res = await fetch(LF.supabaseUrl + '/rest/v1/leads', {
@@ -648,7 +648,7 @@ async function lfSaveLead(name, email) {
             body: JSON.stringify({
                 lead_name:  name,
                 email,
-                status:     'New',
+                phone:      phone || '',
                 client_id:  '0a5f9d27-55c3-4503-b2e2-8499fa6b6939',
                 created_at: new Date().toISOString()
             })
@@ -739,7 +739,7 @@ async function lfSend() {
             setTimeout(lfShowCalendly, 350);
             lfEndConversation();
             const lead = lfExtractLeadInfo();
-            lfSaveLead(lead.name, lead.email);
+            lfSaveLead(lead.name, lead.email, lead.phone);
         } else if (notQualified) {
             setTimeout(lfShowRestartPrompt, 600);
             lfEndConversation();
