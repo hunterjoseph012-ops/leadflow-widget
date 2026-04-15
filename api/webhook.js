@@ -1,4 +1,4 @@
-﻿const Anthropic = require('@anthropic-ai/sdk');
+const Anthropic = require('@anthropic-ai/sdk');
 
 const VERIFY_TOKEN = 'leadflow_webhook_2024';
 
