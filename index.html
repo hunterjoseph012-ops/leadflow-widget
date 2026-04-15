@@ -606,6 +606,15 @@ function lfExtractLeadInfo() {
     // Scan user messages newest-first
     const userMsgs = lfHistory.filter(m => m.role === 'user').reverse();
 
+    // Extract phone from user messages
+    const phoneRe = /(\+?[\d][\d\s\-\(\)\.]{8,18}[\d])/;
+    for (const msg of userMsgs) {
+        if (!phone) {
+            const pm = msg.content.match(phoneRe);
+            if (pm) phone = pm[0].replace(/\s+/g, ' ').trim();
+        }
+    }
+
     for (const msg of userMsgs) {
         if (!email && emailRe.test(msg.content)) {
             email = msg.content.match(emailRe)[0];
