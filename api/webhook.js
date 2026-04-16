@@ -54,7 +54,7 @@ async function saveLead(userId) {
     await fetch(process.env.SUPABASE_URL + "/rest/v1/leads", {
       method: "POST",
       headers: { "apikey": process.env.SUPABASE_KEY, "Authorization": "Bearer " + process.env.SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
-      body: JSON.stringify({ lead_name: name, email, phone, client_id: "0a5f9d27-55c3-4503-b2e2-8499fa6b6939", status: "New", created_at: new Date().toISOString() })
+      body: JSON.stringify({ lead_name: name, email, phone, client_id: "0a5f9d27-55c3-4503-b2e2-8499fa6b6939",channel: "messenger", status: "New", created_at: new Date().toISOString() })
     });
   } catch(e) { console.error("saveLead error:", e); }
 }
