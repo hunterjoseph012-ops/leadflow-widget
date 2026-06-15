@@ -551,7 +551,8 @@ const LF = {
 };
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
-let lfHistory     = [];
+let lfHistory = [];
+const lfSessionId = (crypto.randomUUID ? crypto.randomUUID() : 'lf-' + Date.now() + '-' + Math.random().toString(36).slice(2));
 let lfIsBusy      = false;
 let lfInitialized = false;
 let lfEnded       = false;
@@ -582,15 +583,17 @@ NOT A FIT ✗
 
 CONVERSATION FLOW:
 1. Learn about their business (they respond to the opening greeting)
-2. Show genuine interest, then explore their current lead gen situation / challenges
-3. Naturally ask what they invest in growth each month (or equivalent — be conversational)
-4. Confirm they're the decision maker
-5. Make your qualification call
+2. Show genuine interest, then naturally ask for their first name and the best email to send details to — frame it as "so I can send over some info" rather than a form field
+3. Once you have name and email, continue exploring their current lead gen situation / challenges
+4. Naturally ask what they invest in growth each month (or equivalent — be conversational)
+5. Confirm they're the decision maker
+6. Make your qualification call
 
 SPECIAL INSTRUCTIONS:
+- As soon as the user provides their email address (regardless of qualification stage), include the exact marker ##EMAIL_CAPTURED## at the very end of that message (hidden from user). Only do this once, the first time an email is given.
 - After you've gathered enough info to qualify someone, make the call — don't over-question
-- When QUALIFIED: be genuinely excited, tell them LeadFlow is a great fit, explain the next step is a quick strategy call, then ask for their first name and email address. Include the exact marker ##QUALIFIED## at the very end of your message (it won't be shown to the user).
-- After they provide name, email AND phone number: thank them by first name, express excitement about the call. YOUR FINAL MESSrker ##SHOW_CALENDLY## at the very end (hidden from user).
+- When QUALIFIED: be genuinely excited, tell them LeadFlow is a great fit, and explain the next step is a quick strategy call. Include the exact marker ##QUALIFIED## at the very end of your message (it won't be shown to the user).
+- After they confirm and provide their phone number: thank them by first name, express excitement about the call. Include the exact marker ##SHOW_CALENDLY## at the very end (hidden from user).
 - When NOT QUALIFIED: be kind and empathetic, briefly explain why it's not quite the right fit right now, wish them well — no hard sell. Include the exact marker ##NOT_QUALIFIED## at the very end (hidden from user).
 
 CONTEXT: You already opened the conversation with: "Hi! I'm the LeadFlow AI 👋 I help businesses like yours fill their calendar with qualified appointments. What type of business do you run?" — continue from the user's first reply.`;
@@ -644,22 +647,25 @@ function lfExtractLeadInfo() {
     return { name: name || 'Unknown', email: email || '', phone: phone || '' };
 }
 
-async function lfSaveLead(name, email, phone) {
+async function lfSaveLead(name, email, phone, status) {
     try {
-        console.log('Saving lead:', name, email);
+        console.log('Saving lead:', name, email, 'status:', status);
         const res = await fetch(LF.supabaseUrl + '/rest/v1/leads', {
             method:  'POST',
             headers: {
                 'apikey':        LF.supabaseKey,
                 'Authorization': 'Bearer ' + LF.supabaseKey,
                 'Content-Type':  'application/json',
-                'Prefer':        'return=minimal'
+                'Prefer':        'return=minimal,resolution=merge-duplicates'
             },
             body: JSON.stringify({
+                session_id: lfSessionId,
                 lead_name:  name,
                 email,
                 phone:      phone || '',
-                client_id:  '0a5f9d27-55c3-4503-b2e2-8499fa6b6939',channel: 'widget',
+                client_id:  '0a5f9d27-55c3-4503-b2e2-8499fa6b6939',
+                channel: 'widget',
+                status: status || 'partial',
                 created_at: new Date().toISOString()
             })
         });
@@ -734,22 +740,26 @@ async function lfSend() {
 
         const showCalendly = reply.includes('##SHOW_CALENDLY##');
         const notQualified = reply.includes('##NOT_QUALIFIED##');
-
+        const emailCaptured = reply.includes('##EMAIL_CAPTURED##');
         const cleanReply = reply
             .replace(/##SHOW_CALENDLY##/g, '')
             .replace(/##QUALIFIED##/g, '')
             .replace(/##NOT_QUALIFIED##/g, '')
+            .replace(/##EMAIL_CAPTURED##/g, '')
             .trim();
-
         lfHistory.push({ role: 'assistant', content: cleanReply });
         lfAddBotMessage(cleanReply);
-
+        if (emailCaptured) {
+            console.log('EMAIL_CAPTURED detected, saving partial lead');
+            const lead = lfExtractLeadInfo();
+            lfSaveLead(lead.name, lead.email, lead.phone, 'partial');
+        }
         if (showCalendly) {
             console.log('SHOW_CALENDLY detected, extracting lead info');
             setTimeout(lfShowCalendly, 350);
             lfEndConversation();
             const lead = lfExtractLeadInfo();
-            lfSaveLead(lead.name, lead.email, lead.phone);
+            lfSaveLead(lead.name, lead.email, lead.phone, 'complete');
         } else if (notQualified) {
             setTimeout(lfShowRestartPrompt, 600);
             lfEndConversation();
