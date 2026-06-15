@@ -650,7 +650,7 @@ function lfExtractLeadInfo() {
 async function lfSaveLead(name, email, phone, status) {
     try {
         console.log('Saving lead:', name, email, 'status:', status);
-        const res = await fetch(LF.supabaseUrl + '/rest/v1/leads', {
+        const res = await fetch(LF.supabaseUrl + '/rest/v1/leads?on_conflict=session_id', {
             method:  'POST',
             headers: {
                 'apikey':        LF.supabaseKey,
