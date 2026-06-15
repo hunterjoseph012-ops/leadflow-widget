@@ -665,7 +665,7 @@ async function lfSaveLead(name, email, phone, status) {
                 phone:      phone || '',
                 client_id:  '0a5f9d27-55c3-4503-b2e2-8499fa6b6939',
                 channel: 'widget',
-                status: status || 'partial',
+                status: status || 'Partial',
                 created_at: new Date().toISOString()
             })
         });
@@ -752,14 +752,14 @@ async function lfSend() {
         if (emailCaptured) {
             console.log('EMAIL_CAPTURED detected, saving partial lead');
             const lead = lfExtractLeadInfo();
-            lfSaveLead(lead.name, lead.email, lead.phone, 'partial');
+            lfSaveLead(lead.name, lead.email, lead.phone, 'Partial');
         }
         if (showCalendly) {
             console.log('SHOW_CALENDLY detected, extracting lead info');
             setTimeout(lfShowCalendly, 350);
             lfEndConversation();
             const lead = lfExtractLeadInfo();
-            lfSaveLead(lead.name, lead.email, lead.phone, 'complete');
+            lfSaveLead(lead.name, lead.email, lead.phone, 'New');
         } else if (notQualified) {
             setTimeout(lfShowRestartPrompt, 600);
             lfEndConversation();
